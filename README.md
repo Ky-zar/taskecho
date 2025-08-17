@@ -1,4 +1,4 @@
-# TaskEcho 🎙️ Speak Your Tasks, Stay Productive
+# TaskEcho
 
 Hey! This is Ky.zar and this is TaskEcho, a voice-powered To-Do list app I built to make managing tasks as effortless as talking. With speech-to-text, and a clean interface, it turns productivity into something natural and fun.
 
