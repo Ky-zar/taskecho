@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "TaskEcho",
-  description: "A simple and modern task manager.",
+  description: "A to-do list that listens, literally.",
 };
 
 export default function RootLayout({
