@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Mic, Plus } from "lucide-react";
 import type { TaskCategory } from '@/types';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { useToast } from "@/hooks/use-toast";
+
 
 interface TaskFormProps {
   addTask: (text: string, category: TaskCategory) => void;
@@ -20,7 +23,32 @@ interface TaskFormProps {
 export function TaskForm({ addTask }: TaskFormProps) {
   const [taskText, setTaskText] = useState('');
   const [category, setCategory] = useState<TaskCategory>('personal');
-  const [isRecording, setIsRecording] = useState(false);
+  const { toast } = useToast();
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    error: recognitionError,
+    hasRecognitionSupport,
+  } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (transcript) {
+      setTaskText(transcript);
+    }
+  }, [transcript]);
+  
+  useEffect(() => {
+    if (recognitionError) {
+      toast({
+        variant: 'destructive',
+        title: 'Speech Recognition Error',
+        description: recognitionError,
+      });
+    }
+  }, [recognitionError, toast]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,10 +59,19 @@ export function TaskForm({ addTask }: TaskFormProps) {
   };
 
   const handleVoiceInput = () => {
-    setIsRecording((prev) => !prev);
-    if (isRecording) {
-      // Simulate stopping recording and adding a task.
-      addTask("Example voice-recorded task", category);
+    if (!hasRecognitionSupport) {
+        toast({
+            variant: "destructive",
+            title: "Browser Not Supported",
+            description: "Voice recognition is not supported in your browser.",
+        });
+        return;
+    }
+
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
 
@@ -45,7 +82,7 @@ export function TaskForm({ addTask }: TaskFormProps) {
           type="text"
           value={taskText}
           onChange={(e) => setTaskText(e.target.value)}
-          placeholder="Add a new task..."
+          placeholder="Add a new task or hold mic to speak..."
           className="flex-grow"
           aria-label="New task input"
         />
@@ -66,8 +103,8 @@ export function TaskForm({ addTask }: TaskFormProps) {
           <Plus className="h-4 w-4" />
           <span className="sm:hidden lg:inline-block ml-2">Add Task</span>
         </Button>
-        <Button type="button" variant={isRecording ? "destructive" : "outline"} size="icon" onClick={handleVoiceInput} aria-label={isRecording ? "Stop recording" : "Record voice task"}>
-          <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+        <Button type="button" variant={isListening ? "destructive" : "outline"} size="icon" onClick={handleVoiceInput} aria-label={isListening ? "Stop recording" : "Record voice task"}>
+          <Mic className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
         </Button>
       </div>
     </form>
