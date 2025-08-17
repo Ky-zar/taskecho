@@ -29,18 +29,22 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
     recognitionRef.current = new SpeechRecognition();
     const recognition = recognitionRef.current;
 
-    recognition.continuous = true;
+    recognition.continuous = false; // Changed to false
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
+      let interimTranscript = '';
       let finalTranscript = '';
+
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
       }
-      setTranscript(finalTranscript);
+      setTranscript(finalTranscript || interimTranscript);
     };
 
     recognition.onerror = (event) => {
@@ -49,17 +53,19 @@ export function useSpeechRecognition(): SpeechRecognitionHook {
     
     recognition.onend = () => {
       setIsListening(false);
-      setTranscript('');
     };
     
     return () => {
-        recognition.stop();
+        if(recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
     };
   }, [hasRecognitionSupport]);
   
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       try {
+        setTranscript('');
         recognitionRef.current.start();
         setIsListening(true);
         setError(null);

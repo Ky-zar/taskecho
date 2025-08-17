@@ -14,15 +14,16 @@ import { Mic, Plus } from "lucide-react";
 import type { TaskCategory } from '@/types';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useToast } from "@/hooks/use-toast";
-
+import { textToSpeech } from '@/ai/flows/tts-flow';
 
 interface TaskFormProps {
-  addTask: (text: string, category: TaskCategory) => void;
+  addTask: (text: string, category: TaskCategory, audioDataUri?: string) => void;
 }
 
 export function TaskForm({ addTask }: TaskFormProps) {
   const [taskText, setTaskText] = useState('');
   const [category, setCategory] = useState<TaskCategory>('personal');
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -50,10 +51,28 @@ export function TaskForm({ addTask }: TaskFormProps) {
     }
   }, [recognitionError, toast]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (taskText.trim()) {
-      addTask(taskText, category);
+      let audioDataUri: string | undefined = undefined;
+      if (transcript) {
+        setIsProcessingAudio(true);
+        try {
+          const { audioDataUri: generatedAudio } = await textToSpeech(taskText);
+          audioDataUri = generatedAudio;
+        } catch (error) {
+          console.error("TTS generation failed", error);
+          toast({
+            variant: "destructive",
+            title: "Audio Generation Failed",
+            description: "Could not generate audio for the task.",
+          });
+        } finally {
+          setIsProcessingAudio(false);
+        }
+      }
+
+      addTask(taskText, category, audioDataUri);
       setTaskText('');
     }
   };
@@ -71,6 +90,7 @@ export function TaskForm({ addTask }: TaskFormProps) {
     if (isListening) {
       stopListening();
     } else {
+      setTaskText('');
       startListening();
     }
   };
@@ -99,11 +119,17 @@ export function TaskForm({ addTask }: TaskFormProps) {
         </Select>
       </div>
       <div className="flex gap-2">
-        <Button type="submit" className="flex-grow sm:flex-none">
-          <Plus className="h-4 w-4" />
-          <span className="sm:hidden lg:inline-block ml-2">Add Task</span>
+        <Button type="submit" className="flex-grow sm:flex-none" disabled={isProcessingAudio}>
+          {isProcessingAudio ? (
+            <span className="animate-pulse">Processing...</span>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              <span className="sm:hidden lg:inline-block ml-2">Add Task</span>
+            </>
+          )}
         </Button>
-        <Button type="button" variant={isListening ? "destructive" : "outline"} size="icon" onClick={handleVoiceInput} aria-label={isListening ? "Stop recording" : "Record voice task"}>
+        <Button type="button" variant={isListening ? "destructive" : "outline"} size="icon" onClick={handleVoiceInput} aria-label={isListening ? "Stop recording" : "Record voice task"} disabled={isProcessingAudio}>
           <Mic className={`h-4 w-4 ${isListening ? 'animate-pulse' : ''}`} />
         </Button>
       </div>

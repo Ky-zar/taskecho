@@ -28,7 +28,7 @@ export function useTasks() {
     }
   }, [tasks]);
 
-  const addTask = useCallback((text: string, category: TaskCategory) => {
+  const addTask = useCallback((text: string, category: TaskCategory, audioDataUri?: string) => {
     if (!text.trim()) return;
     const newTask: Task = {
       id: crypto.randomUUID(),
@@ -36,6 +36,7 @@ export function useTasks() {
       isDone: false,
       category,
       createdAt: new Date().toISOString(),
+      audioDataUri,
     };
     setTasks((prevTasks) => [newTask, ...prevTasks]);
   }, []);

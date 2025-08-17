@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Briefcase, User, ShoppingCart, MoreHorizontal } from "lucide-react";
+import { Trash2, Briefcase, User, ShoppingCart, MoreHorizontal, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Task, TaskCategory } from '@/types';
 
@@ -23,13 +23,25 @@ const categoryIcons: Record<TaskCategory, React.ReactNode> = {
 
 export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleDelete = () => {
     setIsDeleting(true);
-    // Wait for animation to finish before calling the actual delete function from the parent
     setTimeout(() => {
       onDelete(task.id);
     }, 300);
+  };
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
   
   return (
@@ -68,6 +80,14 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
           </p>
         </div>
       </div>
+      {task.audioDataUri && (
+        <>
+          <audio ref={audioRef} src={task.audioDataUri} onEnded={() => setIsPlaying(false)} />
+          <Button variant="ghost" size="icon" onClick={handlePlayPause} aria-label={isPlaying ? "Pause task audio" : "Play task audio"}>
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </Button>
+        </>
+      )}
       <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete task">
         <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
       </Button>

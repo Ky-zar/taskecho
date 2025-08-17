@@ -6,4 +6,5 @@ export interface Task {
   isDone: boolean;
   category: TaskCategory;
   createdAt: string; // ISO string
+  audioDataUri?: string;
 }
